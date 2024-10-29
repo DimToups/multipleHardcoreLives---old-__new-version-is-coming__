@@ -6,6 +6,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.mhl.multiplehardcorelives.MultipleHardcoreLives;
 import org.mhl.multiplehardcorelives.model.PlayerListener;
 import org.mhl.multiplehardcorelives.model.database.DatabaseHandler;
@@ -215,9 +216,25 @@ public class MhlController {
         if(player.isOnline() && player.getLivesTokens().isNull() && !lifeTokens.isNull()){
             Bukkit.getLogger().log(Level.INFO, "Resurrecting " + player.getName() +"...");
             try{
-                Objects.requireNonNull(Bukkit.getPlayer(player.getUuid())).setGameMode(GameMode.SURVIVAL);
-                if(sessionManager.isSessionActive())
+                if(sessionManager.isSessionActive()) {
                     this.sessionManager.playerResurrected(player);
+                }
+                BukkitRunnable tellResurrectionToPlayer = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        org.bukkit.entity.Player bPlayer = Bukkit.getPlayer(player.getUuid());
+                        try{
+                            bPlayer.sendTitle("", ChatColor.RED + "You are getting resurrected...", 20 / 2, 20 * 4, 20 /2);
+                            TimeUnit.SECONDS.sleep(5);
+                        } catch (Exception e){
+                            Bukkit.getLogger().log(Level.WARNING, "The bukkit runnable could not inform correctly the player about their resurrection :\n" + e);
+                        } finally {
+                            bPlayer.teleport(bPlayer.getRespawnLocation() != null ? bPlayer.getRespawnLocation() : Bukkit.getServer().getWorld("world").getSpawnLocation());
+                            Objects.requireNonNull(Bukkit.getPlayer(player.getUuid())).setGameMode(GameMode.SURVIVAL);
+                        }
+                    }
+                };
+                tellResurrectionToPlayer.run();
             } catch (Exception e){
                 Bukkit.getLogger().log(Level.WARNING, "Could not resurrect player " + player.getName() + ". You may have to set its gameMode to survival manually.\n" + e);
             }
