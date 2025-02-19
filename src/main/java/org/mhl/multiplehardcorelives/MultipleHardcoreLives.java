@@ -12,7 +12,7 @@ import org.mhl.multiplehardcorelives.model.commands.CommandSession;
 /**
  * The main class of the plugin.
  */
-public final class MultipleHardcoreLives extends JavaPlugin {
+public class MultipleHardcoreLives extends JavaPlugin {
     /**
      * Creates an instance of MultipleHardcoreLives
      */
@@ -69,5 +69,13 @@ public final class MultipleHardcoreLives extends JavaPlugin {
     @Override
     public void onDisable() {
         controller.serverClosing();
+    }
+
+    /**
+     * Sends the main controller
+     * @return The main controller
+     */
+    public MhlController getController() {
+        return controller;
     }
 }

@@ -1,5 +1,6 @@
 package org.mhl.multiplehardcorelives.model.gameLogic;
 
+import org.jetbrains.annotations.NotNull;
 import org.mhl.multiplehardcorelives.model.lifeToken.LifeToken;
 
 import java.util.UUID;
@@ -31,7 +32,7 @@ public class Player {
      * @param name    The player's name.
      * @param livesTokens The player's number of lives
      */
-    public Player(UUID uuid, String name, LifeToken livesTokens){
+    public Player(@NotNull UUID uuid, String name, LifeToken livesTokens){
         this.uuid = uuid;
         this.name = name;
         this.livesTokens = livesTokens;

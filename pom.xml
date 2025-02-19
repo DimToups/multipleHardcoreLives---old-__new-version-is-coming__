@@ -68,7 +68,7 @@
       <dependency>
           <groupId>org.spigotmc</groupId>
           <artifactId>spigot-api</artifactId>
-          <version>1.20.4-R0.1-SNAPSHOT</version>
+          <version>1.21.4-R0.1-SNAPSHOT</version>
           <scope>provided</scope>
       </dependency>
       <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
@@ -88,6 +88,23 @@
           <artifactId>paper-api</artifactId>
           <version>1.21.4-R0.1-SNAPSHOT</version>
           <scope>provided</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter-engine</artifactId>
+          <version>5.11.4</version>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter-params</artifactId>
+          <version>5.11.4</version>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.mockbukkit.mockbukkit</groupId>
+          <artifactId>mockbukkit-v1.21</artifactId>
+          <version>4.32.0</version>
       </dependency>
   </dependencies>
 </project>
