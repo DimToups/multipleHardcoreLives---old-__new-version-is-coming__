@@ -1,4 +1,4 @@
-package org.mhl.multiplehardcorelives.doubles;
+package org.mhl.multiplehardcorelives.model.gameLogic;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
