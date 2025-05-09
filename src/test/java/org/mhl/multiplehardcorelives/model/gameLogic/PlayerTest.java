@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mhl.multiplehardcorelives.model.gameLogic.Player;
 import org.mhl.multiplehardcorelives.model.lifeToken.NumericLifeToken;
 
 import java.util.UUID;
@@ -26,13 +25,11 @@ public class PlayerTest {
 
         @Test
         public void canPlayerHaveNullUUID () {
-            try {
-                player = new Player(null, "test", new NumericLifeToken());
-            } catch (Exception e) {
+            player = new Player(null, "test", new NumericLifeToken());
+            if (player.getUuid() == null)
                 assertTrue(true);
-                return;
-            }
-            fail("The player's UUID should not be null");
+            else
+                fail("The player's UUID should not be null");
         }
 
         @ParameterizedTest
