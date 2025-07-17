@@ -4,38 +4,40 @@ author: Dim_Toups
 main: org.mhl.multiplehardcorelives.MultipleHardcoreLives
 api-version: '1.20'
 
-permissions:
-  startSession:
-    default: true
-  endSession:
-    default: true
-
 commands:
   session:
     description: Manages sessions across the server
-    usage: /session [start | end]
-    permission: admin.manage.playerpermission
+    usage: /session [start | end | events]
+    permission: player
   player:
     description: Manages and displays informations about players
     usage: /player [list | infos | setLives] [player name] [number of lives]
-    permission: admin.manage.playerpermission
+    permission: player
   server:
     description: Manages and displays informations about the server
     usage: /server [reset | defaultNumberOfLives] [lives]
-    permission: admin.manage.playerpermission
+    permission: admin
   writeChanges:
     description: Writes changes in the database
     usage: /writeChanges
-    permission: admin.manage.playerpermission
+    permission: admin
   verify:
     description: Verify data from the plugin
     usage: /verify [server]
-    permission: admin.manage.playerpermission
+    permission: admin
   mhlWorldBorder:
     description: Manages and displays informations about the world border
     usage: /mhlWorldBorder [length | reload] [length]
-    permission: admin.manage.playerpermission
+    permission: admin
   mhlGameMode:
     description: Changes the current gamemode while the session is not active
     usage: /mhlWorldBorder [GameMode]
-    permission: admin.manage.playerpermission
+    permission: admin
+
+permissions:
+  player:
+    description: Allow every player to access basic commands
+    default: true
+  admin:
+    description: Allow access to every command
+    default: op

@@ -12,6 +12,13 @@ import java.util.List;
  */
 public class VerifyTabCompleter implements TabCompleter {
     /**
+     * Creates an instance of VerifyTabCompleter
+     */
+    public VerifyTabCompleter(){
+
+    }
+
+    /**
      * Recommends options to the player when typing the command verify
      * @param commandSender The command sender
      * @param command The command

@@ -12,6 +12,13 @@ import java.util.List;
  */
 public class MhlWorldBorderTabCompeter implements TabCompleter {
     /**
+     * Creates an instance of MhlWorldBorderTabCompeter
+     */
+    public MhlWorldBorderTabCompeter(){
+
+    }
+
+    /**
      * Recommends options to the player when typing the command mhlWorldBorder
      * @param commandSender The command sender
      * @param command The command

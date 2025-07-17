@@ -1,5 +1,6 @@
 package org.mhl.multiplehardcorelives.model.session;
 
+import org.mhl.multiplehardcorelives.model.gameLogic.Player;
 import org.mhl.multiplehardcorelives.model.session.enums.SessionEvents;
 
 import java.util.ArrayList;
@@ -88,5 +89,25 @@ public class Session {
      */
     public void addEvent(SessionEvents eventType, Calendar date, String description){
         this.events.add(new SessionEvent(eventType, date, this.events.size(), description));
+    }
+
+    /**
+     * Adds an event to the session by providing enough information to instantiate a SessionEvent
+     * @param eventType The kind of event
+     * @param date The event's date of happening
+     * @param description The event's description
+     * @param claimer The player claiming the event
+     */
+    public void addEvent(SessionEvents eventType, Calendar date, String description, Player claimer){
+        this.events.add(new SessionEvent(eventType, date, this.events.size(), description, claimer));
+    }
+
+    /**
+     * Sends the events of the specified kind
+     * @param sessionEvents The kind of session events
+     * @return The list of every event of the specified kind
+     */
+    public List<SessionEvent> getEventsOfType(SessionEvents sessionEvents) {
+        return this.events.stream().filter(e -> e.event == sessionEvents).toList();
     }
 }

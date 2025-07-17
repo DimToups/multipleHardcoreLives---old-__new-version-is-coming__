@@ -5,8 +5,10 @@ CREATE TABLE IF NOT EXISTS sessionEvent (
 	"eventDate"	TEXT,
 	"description"	TEXT NOT NULL,
 	"type"	TEXT NOT NULL,
+	"claimer" TEXT,
 	PRIMARY KEY("eventId","server","sessionNumber"),
 	FOREIGN KEY("sessionNumber") REFERENCES "session"("sessionNumber"),
 	FOREIGN KEY("server") REFERENCES "session"("server"),
-	FOREIGN KEY("type") REFERENCES "eventType"("type")
+	FOREIGN KEY("type") REFERENCES "eventType"("type"),
+	FOREIGN KEY("claimer") REFERENCES "player"("UUID")
 )

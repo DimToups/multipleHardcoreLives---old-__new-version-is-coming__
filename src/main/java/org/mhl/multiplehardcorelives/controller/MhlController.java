@@ -6,6 +6,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.mhl.multiplehardcorelives.MultipleHardcoreLives;
 import org.mhl.multiplehardcorelives.model.PlayerListener;
 import org.mhl.multiplehardcorelives.model.database.DatabaseHandler;
@@ -13,8 +14,10 @@ import org.mhl.multiplehardcorelives.model.gameLogic.Player;
 import org.mhl.multiplehardcorelives.model.gameLogic.Server;
 import org.mhl.multiplehardcorelives.model.gameModes.MhlGameMode;
 import org.mhl.multiplehardcorelives.model.gameModes.enums.GameModes;
+import org.mhl.multiplehardcorelives.model.gameModes.impostor.Impostor;
 import org.mhl.multiplehardcorelives.model.lifeToken.LifeToken;
 import org.mhl.multiplehardcorelives.model.session.Session;
+import org.mhl.multiplehardcorelives.model.session.SessionEvent;
 import org.mhl.multiplehardcorelives.model.session.SessionManager;
 import org.mhl.multiplehardcorelives.view.PlayerCommunicator;
 import org.mhl.multiplehardcorelives.view.PlayerList;
@@ -86,14 +89,16 @@ public class MhlController {
         if(!plugin.getDataFolder().exists())
             plugin.getDataFolder().mkdirs();
         databaseHandler.createDatabase();
-        Server foundServer = databaseHandler.findServer(Bukkit.getServer().getName());
-        if(foundServer == null)
-            server = new Server(Bukkit.getServer().getName(), this.gameMode.getDefaultNbLifeTokens());
-        else
-            server = foundServer;
-
         //
-        this.gameMode = GameModes.toMhlGameMode(databaseHandler.lastPlayedGameMode());
+        this.gameMode = GameModes.toMhlGameMode(this, databaseHandler.lastPlayedGameMode());
+        //
+        Server foundServer = databaseHandler.findServer(Bukkit.getServer().getName());
+        if(foundServer == null) {
+            server = new Server(Bukkit.getServer().getName(), this.gameMode.getDefaultNbLifeTokens());
+        }
+        else {
+            server = foundServer;
+        }
 
         //
         try{
@@ -106,7 +111,7 @@ public class MhlController {
         this.reloadWorldBorder();
 
         //
-        this.sessionManager = new SessionManager(databaseHandler.getNbOfPreviousSessions());
+        this.sessionManager = new SessionManager(databaseHandler.getNbOfPreviousSessions(), this);
         this.playerCommunicator = new PlayerCommunicator();
         this.playerList = new PlayerList(this);
     }
@@ -125,8 +130,10 @@ public class MhlController {
      * Starts the session by telling it to the sessionManager.
      */
     public void startSession(){
-        if(!sessionManager.isSessionActive())
+        if(!sessionManager.isSessionActive()) {
+            gameMode.onSessionStart();
             playerCommunicator.tellSessionStart();
+        }
         sessionManager.startSession();
     }
 
@@ -144,6 +151,7 @@ public class MhlController {
                         TimeUnit.SECONDS.sleep(20);
                         playerCommunicator.tellTimeLeft(10);
                         TimeUnit.SECONDS.sleep(10);
+                        gameMode.onSessionEnd();
                         sessionManager.endSession();
                     } catch(Exception e){
                         Bukkit.getLogger().log(Level.WARNING, "Timer could not wait for 30 seconds:\n" + e);
@@ -208,9 +216,25 @@ public class MhlController {
         if(player.isOnline() && player.getLivesTokens().isNull() && !lifeTokens.isNull()){
             Bukkit.getLogger().log(Level.INFO, "Resurrecting " + player.getName() +"...");
             try{
-                Objects.requireNonNull(Bukkit.getPlayer(player.getUuid())).setGameMode(GameMode.SURVIVAL);
-                if(sessionManager.isSessionActive())
+                if(sessionManager.isSessionActive()) {
                     this.sessionManager.playerResurrected(player);
+                }
+                BukkitRunnable tellResurrectionToPlayer = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        org.bukkit.entity.Player bPlayer = Bukkit.getPlayer(player.getUuid());
+                        try{
+                            bPlayer.sendTitle("", ChatColor.RED + "You are getting resurrected...", 20 / 2, 20 * 4, 20 /2);
+                            TimeUnit.SECONDS.sleep(5);
+                        } catch (Exception e){
+                            Bukkit.getLogger().log(Level.WARNING, "The bukkit runnable could not inform correctly the player about their resurrection :\n" + e);
+                        } finally {
+                            bPlayer.teleport(bPlayer.getRespawnLocation() != null ? bPlayer.getRespawnLocation() : Bukkit.getServer().getWorld("world").getSpawnLocation());
+                            Objects.requireNonNull(Bukkit.getPlayer(player.getUuid())).setGameMode(GameMode.SURVIVAL);
+                        }
+                    }
+                };
+                tellResurrectionToPlayer.run();
             } catch (Exception e){
                 Bukkit.getLogger().log(Level.WARNING, "Could not resurrect player " + player.getName() + ". You may have to set its gameMode to survival manually.\n" + e);
             }
@@ -287,7 +311,10 @@ public class MhlController {
      */
     public void serverClosing() {
         Bukkit.getLogger().log(Level.INFO, "Closing the server...");
-        this.endSession();
+        if(!sessionManager.isSessionActive())
+            this.writeChanges();
+        else
+            this.endSession();
     }
 
     /**
@@ -370,27 +397,6 @@ public class MhlController {
         }
 
         commandSender.sendMessage("Player \"" + playerName + "\" has " + player.getLivesTokens() + " lives.");
-    }
-
-    /**
-     * Displays the whole player list to the entity who called the method.
-     * @param commandSender The sender of the command.
-     */
-    public void displayPlayerList(CommandSender commandSender) {
-        List<Player> loadedPlayers, unloadedPlayers;
-        loadedPlayers = server.getPlayers();
-        unloadedPlayers = databaseHandler.getPlayers();
-
-        for(Player player : loadedPlayers)
-            unloadedPlayers.removeIf(dbPlayer -> dbPlayer.getUuid() == player.getUuid());
-
-        StringBuilder message = new StringBuilder("Every player of the server: ");
-        for(Player player : loadedPlayers)
-            message.append("\n\t").append(player.getName()).append("(").append(player.getUuid()).append("): ").append(player.getLivesTokens()).append(" lives (loaded and is ").append(player.isOnlineToString().toLowerCase()).append(")");
-        for(Player player : unloadedPlayers)
-            message.append("\n\t").append(player.getName()).append("(").append(player.getUuid()).append("): ").append(player.getLivesTokens()).append(" lives (unloaded)");
-
-        commandSender.sendMessage(message.toString());
     }
 
     /**
@@ -495,6 +501,7 @@ public class MhlController {
         this.decrementLivesOfPlayer(pde.getEntity());
         if(sessionManager.isSessionActive()){
             this.sessionManager.playerDied(pde);
+            this.gameMode.onPlayerDeath(pde);
             if(Objects.requireNonNull(findPlayerSafelyByUUID(pde.getEntity().getUniqueId())).getLivesTokens().isNull()) {
                 this.sessionManager.definitivePlayerDeath(pde);
             }
@@ -518,30 +525,179 @@ public class MhlController {
             sessionManager.playerAdvancementDone(pade);
     }
 
+    /**
+     * Sends the current GameMode
+     * @return The current GameMode
+     */
     public MhlGameMode getGameMode() {
         return this.gameMode;
     }
 
+    /**
+     * Sends the controller's Server instance
+     * @return The controller's Server instance
+     */
     public Server getServer() {
         return this.server;
     }
 
+    /**
+     * Sets the GameMode to the specified one.
+     * It only works when a session is not active.
+     * It loads the data of every player on the new GameMode
+     * @param gameModeEnum  The kind of GameMode
+     * @param commandSender The command sender
+     */
     public void setGameMode(GameModes gameModeEnum, CommandSender commandSender) {
         if(this.sessionManager.isSessionActive())
             commandSender.sendMessage("You cannot change the GameMode during an active session");
         else if (gameModeEnum != this.getGameMode().getGameMode()){
             writeChanges();
-            MhlGameMode gameMode = GameModes.toMhlGameMode(gameModeEnum);
+            MhlGameMode gameMode = GameModes.toMhlGameMode(this, gameModeEnum);
             this.gameMode = gameMode;
             this.server.setDefaultNbLivesTokens(gameMode.getDefaultNbLifeTokens());
             for(Player player : this.server.getPlayers()){
                 LifeToken lt = databaseHandler.getPlayerLifeTokensFromGameMode(player, gameModeEnum);
-                player.setLivesTokens(lt == null ? GameModes.toMhlGameMode(gameModeEnum).getDefaultNbLifeTokens() : lt);
+                player.setLivesTokens(lt == null ? GameModes.toMhlGameMode(this, gameModeEnum).getDefaultNbLifeTokens() : lt);
             }
             this.playerList.updatePlayerList();
             commandSender.sendMessage("The GameMode has been set to " + gameModeEnum.getName());
         }
         else
             commandSender.sendMessage("The current gameMode has already been set to " + gameModeEnum);
+    }
+
+    /**
+     * Tell to the playerCommunicator to tell to everyone their role for the impostor GameMode
+     * @param impostor The Player instance of the impostor
+     */
+    public void tellWhoIsImposter(Player impostor) {
+        this.playerCommunicator.tellWhoIsImposter(server.getOnlinePlayers(), impostor);
+    }
+
+    /**
+     * Sends the Player instance of the imposter for the Imposter GameMode
+     * @return The Player instance of the imposter
+     */
+    public Player getImpostor() {
+        return ((Impostor)(this.gameMode)).getImpostor();
+    }
+
+    /**
+     * Shows to the command sender who is the imposter
+     * @param commandSender The command sender
+     */
+    public void showImpostor(CommandSender commandSender) {
+        if(sessionManager.isSessionActive()){
+            Player impostor = getImpostor();
+            if(impostor == null)
+                commandSender.sendMessage("There is no impostor currently");
+            else
+                commandSender.sendMessage(impostor.getName());
+        }
+        else
+            commandSender.sendMessage("The session must be active for the command to show you who are the impostors");
+    }
+
+    /**
+     * Sends the current active session
+     * @return The current active session if it exists, null otherwise
+     */
+    public Session getCurrentSession() {
+        if(this.sessionManager.isSessionActive())
+            return this.sessionManager.getSessions().getLast();
+        else
+            return null;
+    }
+
+    /**
+     * Set the claimer of an event to the command sender
+     * @param commandSender The claimer
+     * @param eventId       The id of the event
+     */
+    public void claimEvent(CommandSender commandSender, int eventId) {
+        // Checking the parameters
+        if(!sessionManager.isSessionActive()) {
+            commandSender.sendMessage("The session has not started yet");
+            return;
+        }
+        List<SessionEvent> events = this.sessionManager.getSessions().getLast().getEvents();
+        if(events.size() <= eventId) {
+            commandSender.sendMessage("Invalid eventId");
+            return;
+        }
+        if(server.getPlayers().stream().noneMatch(p -> p.getName().equals(commandSender.getName()))) {
+            commandSender.sendMessage("No players with the name " + commandSender.getName() + " has been found on the server");
+            return;
+        }
+
+        // Claiming the event
+        SessionEvent event = events.get(eventId);
+        Player player = this.findPlayerSafelyByName(commandSender.getName());
+        if(!event.setClaimer(player))
+            commandSender.sendMessage("A player has already claimed this event");
+        else
+            commandSender.sendMessage("The event has been claimed");
+    }
+
+    /**
+     * Revokes the claim of a player to an event
+     * @param commandSender The claimer revoking the event
+     * @param eventId       The event id
+     */
+    public void revokeEvent(CommandSender commandSender, int eventId) {
+        // Checking the parameters
+        if(!sessionManager.isSessionActive()) {
+            commandSender.sendMessage("The session has not started yet");
+            return;
+        }
+        List<SessionEvent> events = this.sessionManager.getSessions().getLast().getEvents();
+        if(events.size() <= eventId) {
+            commandSender.sendMessage("Invalid eventId");
+            return;
+        }
+
+        // Revoking the event claim
+        SessionEvent event = events.get(eventId);
+        if(event.getClaimer() == null)
+            commandSender.sendMessage("Nobody claimed the event");
+        else {
+            commandSender.sendMessage("The event has been claimed");
+            event.revokeEventClaim();
+        }
+    }
+
+    /**
+     * Assign the death claim of an event to the specified player
+     * @param commandSender The command sender
+     * @param eventId       The event id
+     * @param claimer       The player claiming an event
+     */
+    public void assignDeathClaim(CommandSender commandSender, int eventId, Player claimer) {
+        // Checking the parameters
+        if(!sessionManager.isSessionActive()) {
+            commandSender.sendMessage("The session has not started yet");
+            return;
+        }
+        List<SessionEvent> events = this.sessionManager.getSessions().getLast().getEvents();
+        if(events.size() <= eventId) {
+            commandSender.sendMessage("Invalid eventId");
+            return;
+        }
+
+        // Claiming the event
+        SessionEvent event = events.get(eventId);
+        if(!event.setClaimer(claimer))
+            commandSender.sendMessage("A player has already claimed this event");
+        else
+            commandSender.sendMessage("The event has been claimed");
+    }
+
+    /**
+     * Sends the players registered in the database
+     * @return The players registered in the database
+     */
+    public List<Player> getDatabasePlayers() {
+        return databaseHandler.getPlayers();
     }
 }

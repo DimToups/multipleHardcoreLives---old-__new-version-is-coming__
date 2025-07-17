@@ -113,14 +113,17 @@ public class DatabaseHandler {
                         + ", \"" + dateToSQLDate(sessionEnd) + "\""
                         + ", \""+ controller.getGameMode().getGameMode().getName() + "\");";
                 statement.execute(request);
-                for(SessionEvent event : session.getEvents())
-                    statement.execute("INSERT OR REPLACE INTO sessionEvent (server, sessionNumber, eventId, eventDate, description, type) VALUES (\""
+                for(SessionEvent event : session.getEvents()) {
+                    statement.execute("INSERT OR REPLACE INTO sessionEvent (server, sessionNumber, eventId, eventDate, description, type" + (event.getClaimer() == null ? "" : ", claimer") + ") VALUES (\""
                             + Bukkit.getServer().getName() + "\", "
                             + session.getSessionNumber() + ", "
                             + event.eventId + ", \""
                             + dateToSQLDate(event.date.getTime()) + "\", \""
-                            + event.description+ "\", \""
-                            + event.event + "\");");
+                            + event.description + "\", \""
+                            + event.event+ "\""
+                            + (event.getClaimer() == null ? "" : ", \"" + event.getClaimer().getUuid().toString() + "\"")
+                            + ");");
+                }
             }
             closeConnection();
         } catch (Exception e){
@@ -332,6 +335,10 @@ public class DatabaseHandler {
         return nbOfPreviousSessions;
     }
 
+    /**
+     * Sends the last played GameMode on the server
+     * @return The last played GameMode on the server
+     */
     public GameModes lastPlayedGameMode(){
         GameModes gameMode = GameModes.Classic;
         Bukkit.getLogger().log(Level.INFO, "Trying to find the last played GameMode");
@@ -357,6 +364,12 @@ public class DatabaseHandler {
         return gameMode;
     }
 
+    /**
+     * Send the LifeTokens of a player from a specified GameMode
+     * @param player    The wanted player
+     * @param gameModes The wanted GameMode
+     * @return The LifeTokens of a player from a specified GameMode
+     */
     @Nullable
     public LifeToken getPlayerLifeTokensFromGameMode(Player player, GameModes gameModes){
         Bukkit.getLogger().log(Level.INFO, "Trying to find the lifeTokens of the player " + player.getName() + " for the GameMode " + gameModes.getName());

@@ -14,6 +14,13 @@ import org.mhl.multiplehardcorelives.model.commands.CommandSession;
  */
 public final class MultipleHardcoreLives extends JavaPlugin {
     /**
+     * Creates an instance of MultipleHardcoreLives
+     */
+    public MultipleHardcoreLives(){
+
+    }
+
+    /**
      * The plugin's controller. It will manage almost every aspect of the plugin once it's initialised.
      */
     private MhlController controller;
@@ -47,13 +54,13 @@ public final class MultipleHardcoreLives extends JavaPlugin {
         this.getCommand("server").setTabCompleter(new ServerTabCompleter());
 
         this.getCommand("session").setExecutor(new CommandSession(controller));
-        this.getCommand("session").setTabCompleter(new SessionTabCompleter());
+        this.getCommand("session").setTabCompleter(new SessionTabCompleter(controller));
 
         this.getCommand("mhlWorldBorder").setExecutor(new CommandMhlWorldBorder(controller));
         this.getCommand("mhlWorldBorder").setTabCompleter(new MhlWorldBorderTabCompeter());
 
         this.getCommand("mhlGameMode").setExecutor(new CommandMhlGameMode(controller));
-        this.getCommand("mhlGameMode").setTabCompleter(new MhlGameModeTabCompleter());
+        this.getCommand("mhlGameMode").setTabCompleter(new MhlGameModeTabCompleter(controller));
     }
 
     /**

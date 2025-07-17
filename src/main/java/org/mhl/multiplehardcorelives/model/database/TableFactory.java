@@ -234,6 +234,7 @@ public class TableFactory {
 
     /**
      * Creates a session table inside the database
+     * @param token The kind of LifeTokens
      */
     public void createDefaultLifeTokensTable(LifeTokens token){
         StringBuilder defaultLifeTokens = new StringBuilder();
@@ -266,6 +267,7 @@ public class TableFactory {
 
     /**
      * Creates a session table inside the database
+     * @param token The kind of LifeTokens
      */
     public void createLifeTokensOfPlayerTable(LifeTokens token){
         StringBuilder lifeTokensOfPlayer = new StringBuilder();
