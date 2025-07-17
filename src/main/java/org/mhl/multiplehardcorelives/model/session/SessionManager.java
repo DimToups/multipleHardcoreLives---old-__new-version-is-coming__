@@ -1,5 +1,6 @@
 package org.mhl.multiplehardcorelives.model.session;
 
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
@@ -9,7 +10,6 @@ import org.mhl.multiplehardcorelives.model.gameLogic.Player;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Objects;
 import java.util.logging.Level;
 
 /**
@@ -166,7 +166,8 @@ public class SessionManager {
      * @param pade The event of an advancement which has been done
      */
     public void playerAdvancementDone(PlayerAdvancementDoneEvent pade) {
-        this.currentSession.addEvent(SessionEvents.Advancement, Calendar.getInstance(), "Player " + pade.getPlayer().getName() + " just got the advancement " + Objects.requireNonNull(pade.getAdvancement().getDisplay()).getTitle(), controller.findPlayerSafelyByUUID(pade.getPlayer().getUniqueId()));
+        PlainTextComponentSerializer a = PlainTextComponentSerializer.plainText();
+        this.currentSession.addEvent(SessionEvents.Advancement, Calendar.getInstance(), "Player " + pade.getPlayer().getName() + " just got the advancement " + a.serialize(pade.getAdvancement().displayName()), controller.findPlayerSafelyByUUID(pade.getPlayer().getUniqueId()));
     }
 
     /**
